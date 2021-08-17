@@ -1,0 +1,16 @@
+<%- include('../includes/head.ejs') %>
+    <link rel="stylesheet" href="css/product.css"/>
+</head>
+<body>
+    <%- include('../includes/navigation.ejs') %>
+    <h1>Inside Cart</h1>
+    <ul>
+        <% for (let prod of prods) {%>
+            <li><%= prod.id%> (<%= prod.quantity %>)</li>
+            <form action="/delete-product" method="POST">
+                <input type="hidden" value="<%= prod.id %>" name="productId">
+                <button class="btn" type="submit">Delete</button>
+            </form>
+        <% } %>
+    </ul>
+<%- include('../includes/end.ejs') %>

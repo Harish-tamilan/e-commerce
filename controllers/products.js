@@ -2,7 +2,7 @@ const Product = require('../models/product');
 //const { products } = require('../routes/admin');
 
 exports.getAddProduct = (req,res,next)=>{
-    res.render('add-product',{
+    res.render('admin/add-product',{
         path:'/admin/add-product',
         pageTitle:'Add-Product'
     });
@@ -14,12 +14,4 @@ exports.postAddProduct = (req,res,next)=>{
     res.redirect("/");
 }
 
-exports.getAllProducts = (req,res,next)=>{
-    Product.getAll((products)=>{
-        res.render('shop',{
-            path:'/',
-            prods:products,
-            pageTitle:'Shop'
-        });
-    })
-}                                                                                                                                                       
+                                                                                                                                                       
