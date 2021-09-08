@@ -2,56 +2,38 @@ const path = require('path');
 const fs = require('fs'); 
 const Cart = require('../models/cart');
 const p = path.join(path.dirname(process.mainModule.filename),'data','products.json');
+const mongodb = require('mongodb');
+//const { getDb } = require('../util/database');
+const ObjectId = mongodb.ObjectId;
+const getDb = require('../util/database').getDb;
 
-const getProductsFromFile = (cb)=>{
-    fs.readFile(p, (err, fileContent)=>{
-        if(err)
-        {
-            cb([]);
-        }
-        else
-        {
-            //console.log('Filecontent is ',fileContent);
-            if(fileContent.length>0)
-                cb(JSON.parse(fileContent));
-            else
-                cb([]);
-        }
-    });
-};
 
 module.exports = class Product
 {
-    constructor(id,title, url, price, description)
+    constructor(id,title, url, price, description, userId)
     {
-        this.id = id;
+        this._id = id ? new ObjectId(id) : null;
         this.title = title;
         this.url = url;
         this.price = price;
         this.description = description;
+        this.userId = userId;
     }
 
     save()
     {
-        getProductsFromFile((fileContent)=>{
-            if(this.id)
-            {
-                console.log('Inside if block in save method in product model');
-                const index = fileContent.findIndex((prod)=>prod.id===this.id);
-                fileContent[index] = this;
-                fs.writeFile(p, JSON.stringify(fileContent), err=>{
-                    console.log(err);
-                });
-            }
-            else
-            {
-                this.id = Math.random().toString();
-                fileContent.push(this);
-                fs.writeFile(p, JSON.stringify(fileContent), err=>{
-                    console.log(err);
-                });
-            }
-        });
+        const db = getDb();
+        let dbOp;
+        if(this._id)
+        {
+            console.log('inside if block in save method in product.js');
+           dbOp = db.collection('product').updateOne({_id:this._id},{$set: this });
+        }
+        else
+        {
+            dbOp = db.collection('product').insertOne(this);
+        }
+        return dbOp.then((res)=>console.log(res)).catch((err)=>console.log(err));
     }
 
     // save()
@@ -68,35 +50,38 @@ module.exports = class Product
     static findById(id,cb)
     {
         console.log('inside findById, id is ', id);
-        getProductsFromFile((products)=>
-        {
-            const product = products.find((prod)=>prod.id==id);
-            console.log('inside findById in Product model, product is ');
-            console.log(product);
-            cb(product);
-        });
+        const db = getDb();
+        db.collection('product').findOne({_id: new ObjectId(id)})
+        .then((product)=>cb(product))
+        .catch((err)=>{
+            console.log('error in findById in product.js model ');
+            cb({});
+        })
     }
 
     static getAll(cb)
     {
-        getProductsFromFile(cb);
+        const db = getDb();
+
+        db.collection('product').find({}).toArray()
+        .then((res)=>{
+            console.log('inside getAll in product.js');
+            console.log(res);
+            cb(res);
+        })
+        .catch((err)=>{
+            console.log('error in reading the files from product collection');
+        });
     }
 
     static delete(id,cb)
     {
-        this.findById(id,(prod)=>{
-            Cart.deleteProduct(id, prod.price);
-        });
-
-        getProductsFromFile((products)=>{
-            const prods = products.filter((prod)=>prod.id!==id);
-            cb(prods);
-            fs.writeFile(p, JSON.stringify(prods), (error)=>{
-                if(!error)
-                {
-                    
-                }
-            });
-        });
+        const db = getDb();
+        db.collection('product').deleteOne({_id : new ObjectId(id)})
+        .then((res)=>{
+            console.log('product deleted successfully');
+            this.getAll(cb);
+        })
+        .catch((err)=>console.log('error in deleting the product'));
     }
 }

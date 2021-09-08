@@ -1,6 +1,7 @@
 const Product = require('../models/product');
 const Cart = require('../models/cart');
 const { products } = require('../routes/admin');
+const User = require('../models/user');
 
 exports.showIndex = (req,res,next)=>{
     Product.getAll((products)=>{
@@ -24,10 +25,19 @@ exports.getProducts = (req,res,next)=>{
 }
 
 exports.getCart = (req,res,next)=>{
-    Cart.getProducts((cart)=>{
+    // Cart.getProducts((cart)=>{
+    //     res.render('shop/cart',{
+    //         path:'/cart',
+    //         prods:cart.products,
+    //         pageTitle:'cart'
+    //     });
+
+    req.user.getCart(req.user._id,(cart)=>{
+        console.log('cart is ');
+        console.log(cart); 
         res.render('shop/cart',{
             path:'/cart',
-            prods:cart.products,
+            products:cart.items,
             pageTitle:'cart'
         });
     })
@@ -41,20 +51,19 @@ exports.addCart = (req,res,next)=>{
     Product.findById(req.body.productId,(prod)=>{
         console.log('prod is ');
         console.log(prod);
-        const product = new Cart(req.body.productId, parseInt(prod.price));
-        product.add((cart)=>res.render('shop/cart',{
+        req.user.addToCart(prod, (cart)=>res.render('shop/cart',{
             path:'/cart',
-            prods:cart.products,
+            products:cart.items,
             pageTitle:'cart'
         }));
     });
 };
 
-exports.deleteProduct = (req,res,next)=>{
-    Product.findById(req.body.productId, (prod)=>{
-        Cart.deleteProduct(prod.id, prod.price);
-        this.getCart(req,res,next);
-    });
+exports.deleteCart = (req,res,next)=>{
+    console.log('inside deleteCart, productId is ', req.body.productId);
+    req.user.deleteCart(req.body.productId);
+    this.getCart(req,res,next);
+    //req.user.deleteCart(req.productId)
 };
 
 exports.productDetail = (req,res,next)=>{
@@ -66,6 +75,27 @@ exports.productDetail = (req,res,next)=>{
             pageTitle:'Product Detail'
         });
     });
+}
+
+exports.getOrders = (req, res, next)=>{
+    req.user.getOrder((orders)=>{
+        res.render('shop/order',{
+            path:'/order',
+            orders:orders,
+            pageTitle:'Orders'
+        });
+    });
+}
+
+exports.postOrders = (req, res, next)=>{
+    req.user.addOrder((orders)=>{
+        res.render('shop/order',{
+            path:'/order',
+            orders:orders,
+            pageTitle:'Orders'
+        });
+    });
+
 }
 
 
